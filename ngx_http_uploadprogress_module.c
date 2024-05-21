@@ -12,11 +12,11 @@
 
 typedef enum {
     uploadprogress_state_starting = 0,
-    uploadprogress_state_error = 1, 
-    uploadprogress_state_done = 2, 
-    uploadprogress_state_uploading = 3, 
+    uploadprogress_state_error = 1,
+    uploadprogress_state_done = 2,
+    uploadprogress_state_uploading = 3,
     uploadprogress_state_none
-} ngx_http_uploadprogress_state_t; 
+} ngx_http_uploadprogress_state_t;
 
 typedef struct {
     ngx_str_t                           name;
@@ -299,13 +299,13 @@ get_tracking_id(ngx_http_request_t * r)
             ret = ngx_calloc(sizeof(ngx_str_t), r->connection->log );
             ret->data = header[i].value.data;
             ret->len = header[i].value.len;
-            ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0, 
+            ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                             "upload-progress: get_tracking_id found header: %V", ret);
             return ret;
         }
     }
 
-    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0, 
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                     "upload-progress: get_tracking_id no header found");
 
     /* not found, check as a request arg */
@@ -313,9 +313,9 @@ get_tracking_id(ngx_http_request_t * r)
     /* so let's try harder first from the request line */
     args.len =  r->args.len;
     args.data = r->args.data;
-    
+
     if (args.len && args.data) {
-        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0, 
+        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "upload-progress: get_tracking_id no header found, args found");
         i = 0;
         p = args.data;
@@ -323,14 +323,14 @@ get_tracking_id(ngx_http_request_t * r)
             ngx_uint_t len = args.len - (p - args.data);
             if (len >= (upcf->header.len + 1) && ngx_strncasecmp(p, upcf->header.data, upcf->header.len) == 0
                 && p[upcf->header.len] == '=') {
-              ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0, 
+              ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                              "upload-progress: get_tracking_id found args: %s",p);
                 i = 1;
                 break;
             }
             if (len<=0)
                 break;
-        } 
+        }
         while(p++);
 
         if (i) {
@@ -344,13 +344,13 @@ get_tracking_id(ngx_http_request_t * r)
             ret = ngx_calloc(sizeof(ngx_str_t), r->connection->log);
             ret->data = start_p;
             ret->len = p - start_p;
-            ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0, 
+            ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                            "upload-progress: get_tracking_id found args: %V",ret);
             return ret;
         }
     }
 
-    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0, 
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "upload-progress: get_tracking_id no id found");
     return NULL;
 }
@@ -409,7 +409,7 @@ ngx_http_uploadprogress_content_handler(ngx_http_request_t *r)
     ngx_int_t                                    rc;
     ngx_http_uploadprogress_module_ctx_t        *ctx;
     ngx_http_uploadprogress_conf_t              *upcf;
-    
+
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0, "upload-progress: ngx_http_uploadprogress_content_handler");
     upcf = ngx_http_get_module_loc_conf(r, ngx_http_uploadprogress_module);
 
@@ -420,7 +420,7 @@ ngx_http_uploadprogress_content_handler(ngx_http_request_t *r)
     if (rc >= NGX_HTTP_SPECIAL_RESPONSE) {
       return rc;
     }
-    
+
     /* request is OK, hijack the read_event_handler if the request has to be tracked*/
     ctx = ngx_http_get_module_ctx(r, ngx_http_uploadprogress_module);
     if (ctx != NULL) {
@@ -461,12 +461,12 @@ static void ngx_http_uploadprogress_event_handler(ngx_http_request_t *r)
     ngx_http_uploadprogress_module_ctx_t        *module_ctx;
     size_t                                       size;
     off_t                                        rest;
-    
+
 
     rb = r->request_body;
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0, "upload-progress: ngx_http_uploadprogress_event_handler");
-    
+
     /* find node, update rest */
     oldid = id = get_tracking_id(r);
 
@@ -484,7 +484,7 @@ static void ngx_http_uploadprogress_event_handler(ngx_http_request_t *r)
                    "upload-progress: read_event_handler found id: %V", id);
     upcf = ngx_http_get_module_loc_conf(r, ngx_http_uploadprogress_module);
     shm_zone = upcf->shm_zone;
-    
+
     /* call the original read event handler */
     module_ctx = ngx_http_get_module_ctx(r, ngx_http_uploadprogress_module);
     if (module_ctx != NULL ) {
@@ -537,7 +537,7 @@ static void ngx_http_uploadprogress_event_handler(ngx_http_request_t *r)
         #if (NGX_HTTP_V2)
         }
         #endif
-        
+
         if(up->length == 0)
             up->length = r->headers_in.content_length_n;
         ngx_log_debug3(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
@@ -559,12 +559,12 @@ ngx_http_reportuploads_handler(ngx_http_request_t * r)
     ngx_chain_t                      out;
     ngx_int_t                        rc, found=0, done=0, err_status=0;
     off_t                            rest=0, length=0;
-    ngx_uint_t                       len, i;
+    ngx_uint_t                       len;
     ngx_slab_pool_t                 *shpool;
     ngx_http_uploadprogress_conf_t  *upcf;
     ngx_http_uploadprogress_ctx_t   *ctx;
     ngx_http_uploadprogress_node_t  *up;
-    ngx_table_elt_t                 *expires, *cc, **ccp;
+    ngx_table_elt_t                 *expires, *cc;
     ngx_http_uploadprogress_state_t  state;
     ngx_http_uploadprogress_template_t  *t;
 
@@ -637,6 +637,7 @@ ngx_http_reportuploads_handler(ngx_http_request_t * r)
         }
 
         r->headers_out.expires = expires;
+        expires->next = NULL;
 
         expires->hash = 1;
         expires->key.len = sizeof("Expires") - 1;
@@ -646,37 +647,30 @@ ngx_http_reportuploads_handler(ngx_http_request_t * r)
     len = sizeof("Mon, 28 Sep 1970 06:00:00 GMT");
     expires->value.len = len - 1;
 
-    ccp = r->headers_out.cache_control.elts;
-    if (ccp == NULL) {
+    cc = r->headers_out.cache_control;
 
-        if (ngx_array_init(&r->headers_out.cache_control, r->pool,
-                           1, sizeof(ngx_table_elt_t *))
-            != NGX_OK) {
-            return NGX_HTTP_INTERNAL_SERVER_ERROR;
-        }
-
-        ccp = ngx_array_push(&r->headers_out.cache_control);
-        if (ccp == NULL) {
-            return NGX_HTTP_INTERNAL_SERVER_ERROR;
-        }
+    if (cc == NULL) {
 
         cc = ngx_list_push(&r->headers_out.headers);
         if (cc == NULL) {
+            expires->hash = 0;
             return NGX_HTTP_INTERNAL_SERVER_ERROR;
         }
+
+        r->headers_out.cache_control = cc;
+        cc->next = NULL;
 
         cc->hash = 1;
         cc->key.len = sizeof("Cache-Control") - 1;
         cc->key.data = (u_char *) "Cache-Control";
 
-        *ccp = cc;
-
     } else {
-        for (i = 1; i < r->headers_out.cache_control.nelts; i++) {
-            ccp[i]->hash = 0;
+        for (cc = cc->next; cc; cc = cc->next) {
+            cc->hash = 0;
         }
 
-        cc = ccp[0];
+        cc = r->headers_out.cache_control;
+        cc->next = NULL;
     }
 
     expires->value.data = (u_char *) "Thu, 01 Jan 1970 00:00:01 GMT";
@@ -703,7 +697,7 @@ ngx_http_reportuploads_handler(ngx_http_request_t * r)
    * request in error:        err_status >= NGX_HTTP_BAD_REQUEST
    * request finished:        done = true
    * request not yet started but registered:        length==0 && rest ==0
-   * reauest in progress:     rest > 0 
+   * reauest in progress:     rest > 0
  */
 
     if (!found) {
@@ -757,7 +751,7 @@ ngx_http_reportuploads_handler(ngx_http_request_t * r)
     return ngx_http_output_filter(r, &out);
 }
 
-/* 
+/*
 Let's register the upload connection in our connections rb-tree
 */
 static ngx_int_t
@@ -1053,17 +1047,17 @@ ngx_http_uploadprogress_cleanup(void *data)
     up = (ngx_http_uploadprogress_node_t *) node;
 
     ngx_shmtx_lock(&shpool->mutex);
-    
+
     up->done = 1;               /* mark the original request as done */
     up->timeout = ngx_time() + upcln->timeout;      /* keep tracking for 60s */
-    
+
     if (r != NULL ) {
         ngx_uint_t rc = r->err_status ? r->err_status : r->headers_out.status;
         if (rc >= NGX_HTTP_SPECIAL_RESPONSE) {
             up->err_status = rc;
         }
     }
-    
+
     ngx_shmtx_unlock(&shpool->mutex);
 
     ngx_log_debug2(NGX_LOG_DEBUG_HTTP, upcln->shm_zone->shm.log, 0,
@@ -1184,7 +1178,7 @@ ngx_http_uploadprogress_errortracker(ngx_http_request_t * r)
         node = ngx_slab_alloc_locked(shpool, n);
         if (node == NULL) {
             ngx_shmtx_unlock(&shpool->mutex);
-            ngx_free(id);							 
+            ngx_free(id);
             goto finish;
         }
 
@@ -1251,9 +1245,9 @@ ngx_http_uploadprogress_init(ngx_conf_t * cf)
 
     *h = ngx_http_uploadprogress_handler;
 
-    /* 
-       we also need to track HTTP errors 
-       unfortunately, the above handler is not called in case of 
+    /*
+       we also need to track HTTP errors
+       unfortunately, the above handler is not called in case of
        errors.
        we have to register a header output filter that will be
        called in any case to track those errors
@@ -1284,10 +1278,10 @@ ngx_http_uploadprogress_create_loc_conf(ngx_conf_t * cf)
         if (elt == NULL) {
             return NGX_CONF_ERROR;
         }
-        
+
         elt->values = NULL;
         elt->lengths = NULL;
-    } 
+    }
 
     return conf;
 }
@@ -1326,7 +1320,7 @@ ngx_http_uploadprogress_merge_loc_conf(ngx_conf_t * cf, void *parent, void *chil
                 t[i].lengths = pt[i].lengths;
             }
         }
-    } 
+    }
 
     ngx_conf_merge_str_value(conf->header, prev->header, "X-Progress-ID");
     ngx_conf_merge_str_value(conf->jsonp_parameter, prev->jsonp_parameter, "callback");
@@ -1368,7 +1362,7 @@ ngx_http_uploadprogress_init_variables_and_templates(ngx_conf_t *cf)
         if (ngx_http_upload_progress_set_template(cf, elt, ngx_http_uploadprogress_jsonp_defaults + i) != NGX_CONF_OK) {
             return NGX_ERROR;
         }
-        
+
         m++;
         i++;
     }
